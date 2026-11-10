@@ -17,6 +17,12 @@
     store.attempts[id] || {}
   ));
   const fmt = n => (Math.round(n * 10) / 10).toString();
+  const SS = window.StudioStore;                      // published Question Studio content, if present
+  const isEmptyDeep = v => v === '' || v == null || (Array.isArray(v) ? v.every(isEmptyDeep) : typeof v === 'object' ? Object.values(v).every(isEmptyDeep) : false);
+  const encode = v => isEmptyDeep(v) ? '' : (typeof v === 'string' ? v : JSON.stringify(v));
+  const decode = d => { if (typeof d === 'string' && /^[\[{]/.test(d)) { try { return JSON.parse(d); } catch { /* plain text */ } } return d; };
+  const usesComponent = x => !!(SS && x.responseComponent && x.responseComponent.type);
+  const richOrPlain = (html, plain) => html ? SS.sanitise(html) : esc(plain);
 
   /* ---------- cohort statistic (tag 5 of 5) ---------- */
   function statisticTag(question) {
@@ -55,6 +61,7 @@
   }
 
   function currentAnswer() {
+    if (usesComponent(q)) return encode(SS.readComponent(q.responseComponent, 'answer', mount));
     return q.responseType === 'multiple_choice'
       ? (document.querySelector('input[name=answer]:checked')?.value || '')
       : (document.getElementById('writtenAnswer')?.value || '');
@@ -69,12 +76,12 @@
     q = visible[ix]; selector.value = String(ix);
     const a = attemptOf(q.id);
     const prior = a.draft || '';
-    const response = q.responseType === 'multiple_choice'
+    const response = usesComponent(q) ? SS.renderComponent(q.responseComponent, 'answer', decode(prior)) : q.responseType === 'multiple_choice'
       ? q.options.map((o, i) => { const l = 'ABCD'[i]; return `<label class="option"><input type="radio" name="answer" value="${l}" ${prior === l ? 'checked' : ''}><strong>${l}.</strong> ${esc(o)}</label>`; }).join('')
       : `<textarea id="writtenAnswer" aria-label="Your response">${esc(prior)}</textarea><div class="muted" id="wordCount"></div>`;
 
     mount.innerHTML = `<article class="card">
-      ${q.section === 'B' ? `<div class="context"><h3>Section B • Question ${esc(q.group)}</h3><p>${esc(q.sharedContext)}</p></div>` : ''}
+      ${q.section === 'B' ? `<div class="context"><h3>Section B • Question ${esc(q.group)}</h3><div>${richOrPlain(q.sharedContextHtml, q.sharedContext)}</div></div>` : ''}
       <div class="tagrow">
         <span class="tag dark">${q.examYear} VCAA Exam</span>
         <span class="tag purple">Section ${q.section}, Question ${esc(q.displayLabel)}</span>
@@ -82,7 +89,7 @@
         <span class="tag amber">${q.marks} mark${q.marks === 1 ? '' : 's'}</span>
         ${statisticTag(q)}
       </div>
-      <div class="label">Exam question</div><div class="qblock"><h2>${esc(q.text)}</h2></div>
+      <div class="label">Exam question</div><div class="qblock"><h2>${richOrPlain(q.textHtml, q.text)}</h2></div><div id="studioAssets"></div>
       ${(q.visualAssets || []).map(x => `<div class="asset"><img src="${esc(x)}" alt="Question stimulus asset"></div>`).join('')}
       <div class="label">Your response</div>${response}
       <div class="actions">
@@ -93,6 +100,8 @@
     </article>`;
 
     document.querySelectorAll('input[name=answer]').forEach(x => x.onchange = saveDraft);
+    if (usesComponent(q)) { mount.addEventListener('input', saveDraft); mount.addEventListener('change', saveDraft); }
+    if (SS) SS.mountAssets(q.id, document.getElementById('studioAssets'));
     if (window.writtenAnswer) {
       const wc = () => { const n = writtenAnswer.value.trim().split(/\s+/).filter(Boolean).length; wordCount.textContent = `${n} word${n === 1 ? '' : 's'} • saved automatically`; };
       writtenAnswer.oninput = () => { saveDraft(); wc(); }; wc();
@@ -125,6 +134,11 @@
     const a = attemptOf(q.id);
     a.count = (a.count || 0) + 1;
 
+    if (usesComponent(q) && q.responseComponent.type !== 'extended_text' && q.responseComponent.type !== 'short_text') {
+      a.submissions.push({ text: raw, at: new Date().toISOString(), criteriaMet: [] }); persist();
+      const r = SS.assessComponent(q.responseComponent, decode(raw));
+      feedback.innerHTML = `<div class="notice">${r.available ? `${r.earned} of ${r.available} auto-checked item${r.available === 1 ? '' : 's'} correct.` : 'Submitted for review.'}</div><p>${esc(r.note)}</p>`; return;
+    }
     if (q.responseType === 'multiple_choice') {
       a.submissions.push({ text: raw, at: new Date().toISOString(), criteriaMet: [] });
       persist();

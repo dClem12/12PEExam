@@ -114,6 +114,108 @@ function loadData() {
   const examHtml = await page.locator('#examContent').innerHTML();
   check('timed exam shows no cohort statistic, hints or examples', !/answered correctly|Average:|report mean|hint|full-mark/i.test(examHtml));
 
+
+  console.log('Question Studio: sanitiser and validation');
+  await page.goto(url('studio.html'));
+  const san = await page.evaluate(() => StudioStore.sanitise('<p onclick="x()">Hi <b>bold</b><sup>2</sup><script>alert(1)</script><img src=x onerror=alert(1)><a href="javascript:alert(1)">bad</a><a href="https://example.org">ok</a></p>'));
+  check('script, event handlers and javascript: links are stripped', !/script|onerror|onclick|javascript:/i.test(san), san);
+  check('bold, superscript and safe links survive', /<b>bold<\/b>/.test(san) && /<sup>2<\/sup>/.test(san) && /href="https:\/\/example\.org"/.test(san));
+  const v = await page.evaluate(() => ({
+    pct: StudioStore.validateAssessment({ options: ['a','b','c','d'] }, { statisticType: 'option_distribution', correctOption: 'B', optionPercentages: { A: 50, B: 70, C: 0, D: 0 } }),
+    range: StudioStore.validateAssessment({ options: ['a','b','c','d'] }, { statisticType: 'option_distribution', correctOption: 'B', optionPercentages: { A: -5, B: 105, C: 0, D: 0 } }),
+    avg: StudioStore.validateAssessment({ marks: 3 }, { statisticType: 'average_score', averageScore: 4, maximumScore: 3 }),
+    neg: StudioStore.validateAssessment({ marks: 3 }, { statisticType: 'average_score', averageScore: -1, maximumScore: 3 }),
+    max: StudioStore.validateAssessment({ marks: 3 }, { statisticType: 'average_score', averageScore: 1, maximumScore: 2 }),
+    ex: StudioStore.validateFullMark({ section: 'B', criteria: [['c1', [], 'criterion-1'], ['c2', [], 'criterion-2']], fullMarkExample: { content: 'x', criteriaDemonstrated: ['criterion-1'] } })
+  }));
+  check('option percentages must total about 100', v.pct.length > 0);
+  check('percentages must be between 0 and 100', v.range.some(e => /between 0 and 100/.test(e)));
+  check('average cannot exceed maximum', v.avg.some(e => /exceed/.test(e)));
+  check('average cannot be negative', v.neg.some(e => /negative/.test(e)));
+  check('maximum must match mark allocation', v.max.some(e => /match/.test(e)));
+  check('example must demonstrate every criterion', v.ex.length === 1);
+
+  console.log('Question Studio: draft / publish / versions');
+  const target = 'PE-2025-B-Q2D';
+  await page.selectOption('#qPicker', target);
+  await page.locator('.rte-area').nth(1).evaluate(e => { e.innerHTML = 'Draft <b>rewrite</b> of the question'; e.dispatchEvent(new Event('input')); });
+  await page.click('#saveDraft');
+  check('status becomes draft', /draft/.test(await page.textContent('#statusPill')));
+  await page.goto(url('practice.html')); await page.selectOption('#sectionFilter', 'B');
+  await page.selectOption('#selector', { label: (await page.$$eval('#selector option', o => o.find(x => /Question 2d/.test(x.textContent))?.textContent)) });
+  check('students still see published content while a draft exists', !/rewrite/.test(await page.textContent('.qblock')));
+  await page.goto(url('studio.html')); await page.selectOption('#qPicker', target);
+  await page.click('#publishBtn');
+  check('publish blocked until every review gate passes', /Complete every review gate/.test(await page.textContent('#errors')));
+  for (let i = 0; i < 4; i++) await page.click('#advanceGate');
+  await page.click('#publishBtn');
+  check('publish succeeds after all gates', /Published as version 1/.test(await page.textContent('#saveMsg')));
+  await page.goto(url('practice.html')); await page.selectOption('#sectionFilter', 'B');
+  await page.selectOption('#selector', { label: (await page.$$eval('#selector option', o => o.find(x => /Question 2d/.test(x.textContent))?.textContent)) });
+  check('published rich text reaches students', /rewrite/.test(await page.textContent('.qblock')) && (await page.locator('.qblock b').count()) === 1);
+  await page.goto(url('studio.html')); await page.selectOption('#qPicker', target);
+  await page.locator('.rte-area').nth(1).evaluate(e => { e.innerHTML = 'Second edit'; e.dispatchEvent(new Event('input')); });
+  await page.click('#saveDraft');
+  for (let i = 0; i < 4; i++) await page.click('#advanceGate');
+  await page.click('#publishBtn');
+  check('second publish creates version 2 and keeps version 1', (await page.locator('[data-rb]').count()) === 2);
+  await page.click('[data-rb="1"]');
+  check('rollback returns to draft instead of overwriting live content', /draft/.test(await page.textContent('#statusPill')));
+
+  console.log('Question Studio: editable table saves, restores and assesses');
+  await page.goto(url('studio.html')); await page.selectOption('#qPicker', 'PE-2025-B-Q3B');
+  await page.selectOption('#compType', 'editable_table');
+  await page.fill('#compJson', JSON.stringify({ header: ['Measure', 'Value'], rows: [['Heart rate', ''], ['Work:rest', '']], expected: { '0,1': '180', '1,1': '1:2' } }));
+  await page.click('#saveDraft');
+  for (let i = 0; i < 4; i++) await page.click('#advanceGate');
+  await page.click('#publishBtn');
+  check('table component published', /Published as version/.test(await page.textContent('#saveMsg')));
+  await page.goto(url('practice.html')); await page.selectOption('#sectionFilter', 'B');
+  await page.selectOption('#selector', { label: (await page.$$eval('#selector option', o => o.find(x => /Question 3b/.test(x.textContent))?.textContent)) });
+  await page.locator('[data-cell="0,1"]').fill('180'); await page.locator('[data-cell="1,1"]').fill('wrong');
+  await page.click('#assess');
+  check('table assessed objectively (1 of 2 cells)', /1 of 2 auto-checked/.test(await page.textContent('#feedback')));
+  await page.reload(); await page.selectOption('#sectionFilter', 'B');
+  await page.selectOption('#selector', { label: (await page.$$eval('#selector option', o => o.find(x => /Question 3b/.test(x.textContent))?.textContent)) });
+  check('table entries restore after reload', (await page.locator('[data-cell="0,1"]').inputValue()) === '180');
+
+  console.log('Question Studio: assets');
+  const png = path.join(require('os').tmpdir(), 'peasset.png');
+  fs.writeFileSync(png, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==', 'base64'));
+  await page.goto(url('studio.html')); await page.selectOption('#qPicker', 'PE-2025-B-Q6A');
+  await page.fill('#aAlt', 'Test marathon chart'); await page.fill('#aCaption', 'Caption'); await page.fill('#aRights', 'Test holder'); await page.fill('#aLicence', 'CC0');
+  await page.setInputFiles('#assetFile', png);
+  await page.waitForSelector('.asset-row');
+  check('upload attaches to the selected question with metadata', /Test holder/.test(await page.textContent('.asset-row')));
+  const viewFor = async label => {
+    await page.goto(url('practice.html')); await page.selectOption('#sectionFilter', 'B');
+    await page.selectOption('#selector', { label: (await page.$$eval('#selector option', (o, l) => o.find(x => x.textContent.includes(l))?.textContent, label)) });
+    await page.waitForSelector('#studioAssets img', { timeout: 1500 }).catch(() => null); // IndexedDB mount is asynchronous
+    return page.locator('#studioAssets img').count();
+  };
+  check('draft asset hidden from students', (await viewFor('Question 6a')) === 0);
+  await page.goto(url('studio.html')); await page.selectOption('#qPicker', 'PE-2025-B-Q6A'); await page.click('[data-act=approve]'); await page.waitForFunction(() => /· approved ·/.test(document.querySelector('.asset-row')?.textContent || '')); // wait for the IndexedDB write
+  check('approved asset visible on its own question', (await viewFor('Question 6a')) === 1);
+  check('asset not visible on other questions', (await viewFor('Question 6b')) === 0);
+
+  console.log('Question Studio: duplicates, archive, previews');
+  await page.goto(url('studio.html'));
+  const before = await page.locator('#qPicker option').count();
+  await page.selectOption('#qPicker', 'PE-2025-B-Q4A'); await page.click('#dupQuestion');
+  check('duplicate question creates one draft copy', (await page.locator('#qPicker option').count()) === before + 1);
+  await page.selectOption('#qPicker', 'PE-2025-B-Q4A'); await page.click('#dupGroup');
+  check('duplicate group creates a copy of every part in the group', (await page.locator('#qPicker option').count()) === before + 1 + Q.filter(q => q.group === '4').length);
+  await page.click('[data-pv=strict]');
+  check('strict preview hides cohort statistic', (await page.locator('#previewFrame .stat').count()) === 0);
+  await page.click('[data-pv=supported]');
+  check('supported preview shows cohort statistic', (await page.locator('#previewFrame .stat').count()) === 1);
+  await page.click('[data-pv=mobile]');
+  check('mobile preview constrains width', await page.locator('#previewFrame.mobile').count() === 1);
+  await page.selectOption('#qPicker', 'PE-2025-B-Q1A'); await page.click('#archiveBtn');
+  await page.goto(url('practice.html')); await page.selectOption('#sectionFilter', 'B');
+  check('archived question is hidden from students', !(await page.$$eval('#selector option', o => o.some(x => /Question 1a /.test(x.textContent)))));
+  check('draft duplicates are not shown to students', !(await page.$$eval('#selector option', o => o.some(x => /copy/i.test(x.textContent)))));
+
   check('no page errors', errors.length === 0, errors.join('; '));
   await browser.close();
   console.log(`\n${passes} passed, ${failures} failed`);
