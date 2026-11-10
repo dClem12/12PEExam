@@ -1,0 +1,313 @@
+{
+  "sourceFile": "VCE_PE_Response_Lab_Standalone.html",
+  "manualReviewCompleted": true,
+  "unresolvedItems": [],
+  "items": [
+    {
+      "id": "PE-2025-A-Q01",
+      "displayLabel": "1",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q02",
+      "displayLabel": "2",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q03",
+      "displayLabel": "3",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q04",
+      "displayLabel": "4",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q05",
+      "displayLabel": "5",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q06",
+      "displayLabel": "6",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q07",
+      "displayLabel": "7",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q08",
+      "displayLabel": "8",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q09",
+      "displayLabel": "9",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q10",
+      "displayLabel": "10",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q11",
+      "displayLabel": "11",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q12",
+      "displayLabel": "12",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q13",
+      "displayLabel": "13",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q14",
+      "displayLabel": "14",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q15",
+      "displayLabel": "15",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q16",
+      "displayLabel": "16",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q17",
+      "displayLabel": "17",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q18",
+      "displayLabel": "18",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q19",
+      "displayLabel": "19",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-A-Q20",
+      "displayLabel": "20",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q1A",
+      "displayLabel": "1a",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q1B",
+      "displayLabel": "1b",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q1C",
+      "displayLabel": "1c",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q1D",
+      "displayLabel": "1d",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q1E",
+      "displayLabel": "1e",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q2A-I",
+      "displayLabel": "2a.i",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q2A-II",
+      "displayLabel": "2a.ii",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q2B",
+      "displayLabel": "2b",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q2C",
+      "displayLabel": "2c",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q2D",
+      "displayLabel": "2d",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q3A",
+      "displayLabel": "3a",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q3B",
+      "displayLabel": "3b",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q3C",
+      "displayLabel": "3c",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q3D",
+      "displayLabel": "3d",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q3E",
+      "displayLabel": "3e",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q3F",
+      "displayLabel": "3f",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q4A",
+      "displayLabel": "4a",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q4B",
+      "displayLabel": "4b",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q4C",
+      "displayLabel": "4c",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q4D",
+      "displayLabel": "4d",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q4E",
+      "displayLabel": "4e",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q4F-I",
+      "displayLabel": "4f.i",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q4F-II",
+      "displayLabel": "4f.ii",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q5A-I",
+      "displayLabel": "5a.i",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q5A-II",
+      "displayLabel": "5a.ii",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q5B",
+      "displayLabel": "5b",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q6A",
+      "displayLabel": "6a",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q6B",
+      "displayLabel": "6b",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q7A",
+      "displayLabel": "7a",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q7B",
+      "displayLabel": "7b",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    },
+    {
+      "id": "PE-2025-B-Q8",
+      "displayLabel": "8",
+      "sourceVerified": true,
+      "verificationMethod": "manual source comparison"
+    }
+  ]
+}
