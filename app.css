@@ -17,3 +17,7 @@ body{overflow-x:hidden}
 .example{border-top:2px solid #0e7490;margin-top:18px;padding-top:14px}.compare{width:100%;border-collapse:collapse;margin:10px 0}.compare th,.compare td{border:1px solid #d9e1ec;padding:10px;vertical-align:top;text-align:left}.compare th{background:#f0f9ff}
 button[disabled]{opacity:.5;cursor:not-allowed}
 @media(max-width:700px){.compare,.compare tbody,.compare tr,.compare td,.compare th{display:block;width:100%}.grid2{grid-template-columns:1fr}}
+
+/* Public navigation fix: prevent the Create account label being clipped. */
+.nav{overflow:visible}.links{justify-content:flex-end;align-items:stretch;overflow:visible;min-width:0}.links a,.links button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:auto;max-width:none;min-width:max-content;min-height:42px;height:auto;padding:8px 10px;line-height:1.15;white-space:nowrap;overflow:visible;text-overflow:clip}
+@media(max-width:900px){.nav{align-items:flex-start;gap:12px;flex-wrap:wrap}.links{width:100%;justify-content:flex-start}.links a,.links button{min-width:auto}}
