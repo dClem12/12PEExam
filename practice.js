@@ -2,6 +2,7 @@
    submit -> revise -> reveal full-mark example sequence, comparison and reflection.
    State lives in localStorage key "pe13" (shared with dashboard, exam and results). */
 (() => {
+  const previewMode = window.MODE === 'preview';
   let ix = 0, visible = [...QUESTIONS], q = QUESTIONS[0];
   const store = JSON.parse(localStorage.getItem('pe13') || '{}');
   store.attempts = store.attempts || {};
@@ -22,7 +23,7 @@
   const encode = v => isEmptyDeep(v) ? '' : (typeof v === 'string' ? v : JSON.stringify(v));
   const decode = d => { if (typeof d === 'string' && /^[\[{]/.test(d)) { try { return JSON.parse(d); } catch { /* plain text */ } } return d; };
   const usesComponent = x => !!(SS && x.responseComponent && x.responseComponent.type);
-  const richOrPlain = (html, plain) => html ? SS.sanitise(html) : esc(plain);
+  const richOrPlain = (html, plain) => html ? (SS ? SS.sanitise(html) : html) : esc(plain);
 
   /* ---------- cohort statistic (tag 5 of 5) ---------- */
   function statisticTag(question) {
@@ -73,7 +74,7 @@
   /* ---------- render ---------- */
   function render() {
     if (!visible.length) { mount.innerHTML = '<div class="notice">No questions match these filters.</div>'; return; }
-    q = visible[ix]; selector.value = String(ix);
+    q = visible[ix]; if (window.selector) selector.value = String(ix);
     const a = attemptOf(q.id);
     const prior = a.draft || '';
     const response = usesComponent(q) ? SS.renderComponent(q.responseComponent, 'answer', decode(prior)) : q.responseType === 'multiple_choice'
@@ -222,15 +223,21 @@
   }
 
   /* ---------- wiring ---------- */
-  selector.onchange = () => { ix = +selector.value; render(); };
-  [sectionFilter, topicFilter, marksFilter].forEach(x => x.onchange = apply);
-  previousQuestion.onclick = () => { ix = Math.max(0, ix - 1); render(); };
-  nextQuestion.onclick = () => { ix = Math.min(visible.length - 1, ix + 1); render(); };
-  weakTopicSet.onclick = () => { topicFilter.value = 'all'; sectionFilter.value = 'B'; marksFilter.value = 'all'; apply(); };
-  resetPractice.onclick = () => {
-    if (confirm('Reset all saved practice responses, bookmarks and retry dates? This will not remove exam history or your account.')) {
-      store.attempts = {}; store.bookmarks = {}; store.retries = {}; persist(); apply();
-    }
-  };
-  populateFilters(); apply();
+  if (previewMode) {
+    visible = QUESTIONS.length ? [QUESTIONS[0]] : [];
+    ix = 0;
+    render();
+  } else {
+    selector.onchange = () => { ix = +selector.value; render(); };
+    [sectionFilter, topicFilter, marksFilter].forEach(x => x.onchange = apply);
+    previousQuestion.onclick = () => { ix = Math.max(0, ix - 1); render(); };
+    nextQuestion.onclick = () => { ix = Math.min(visible.length - 1, ix + 1); render(); };
+    weakTopicSet.onclick = () => { topicFilter.value = 'all'; sectionFilter.value = 'B'; marksFilter.value = 'all'; apply(); };
+    resetPractice.onclick = () => {
+      if (confirm('Reset all saved practice responses, bookmarks and retry dates? This will not remove exam history or your account.')) {
+        store.attempts = {}; store.bookmarks = {}; store.retries = {}; persist(); apply();
+      }
+    };
+    populateFilters(); apply();
+  }
 })();
