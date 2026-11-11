@@ -1,45 +1,18 @@
 {
-  "package": "VCE PE Response Lab Studio PDF Import Build",
-  "files": [
-    {
-      "name": "studio.html",
-      "size": 5728,
-      "sha256": "0d6a17ca394bb217df2c5c08365605b30928bc0dafc0515071d6325b5bef9668"
-    },
-    {
-      "name": "studio.js",
-      "size": 17420,
-      "sha256": "9528ae4e607af1df77ddcf0298f48619a00b58f0739fddeb5f185112bc906d02"
-    },
-    {
-      "name": "studio-store.js",
-      "size": 16457,
-      "sha256": "54c1a4260e4c5cad977ddafd4913801d888430425e605b694e394581fd241f71"
-    },
-    {
-      "name": "pdf-ingest.js",
-      "size": 8138,
-      "sha256": "386e9726056a66d02879fc1754b3e86b3eea99b2a255261f817fd9e9c71fe29c"
-    },
-    {
-      "name": "practice.js",
-      "size": 15258,
-      "sha256": "aa6a3ec00537d931c90d96e8fe20f97204ddfffca7043e0915ced1a6c68e1c13"
-    },
-    {
-      "name": "preview.html",
-      "size": 1041,
-      "sha256": "b4e96d93809aafc12b3229abf4783dc8da6ce75c921de33622813bfcaad4ceea"
-    },
-    {
-      "name": "app.css",
-      "size": 7269,
-      "sha256": "8adf1e937027b0d71c08ae9d10664062ead33778d32b9a5fc25094ca9158d7c7"
-    }
+  "verified_controls": [
+    "id=\"importPdf\"",
+    "Choose examination PDF",
+    "id=\"pdfInput\"",
+    "id=\"pdfDialog\"",
+    "src=\"pdf-ingest.js\""
   ],
-  "notes": [
-    "Upload all files to the repository root.",
-    "Keep the existing data.js and site-shell.js.",
-    "PDF import loads PDF.js and Tesseract.js from pinned CDNs."
+  "files": [
+    "studio.html",
+    "studio.js",
+    "studio-store.js",
+    "pdf-ingest.js",
+    "practice.js",
+    "preview.html",
+    "app.css"
   ]
 }
