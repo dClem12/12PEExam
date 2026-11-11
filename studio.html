@@ -1,0 +1,74 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Question Studio</title><link rel="stylesheet" href="app.css"><link rel="icon" href="favicon.svg"><style>
+.rte{border:1px solid #b9c6d6;border-radius:10px;background:#fff}.rte-bar{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border-bottom:1px solid #d9e1ec;background:#f8fafc;border-radius:10px 10px 0 0}.rte-bar button{padding:5px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font-weight:800}.rte-area{min-height:90px;padding:10px;outline:none}.rte-area:focus{box-shadow:inset 0 0 0 2px #0e7490}
+.studio-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:block;margin:10px 0}.field>span{display:block;font-size:12px;font-weight:900;text-transform:uppercase;color:#475467;margin-bottom:4px}.field input,.field select,.field textarea{width:100%}
+.errors{background:#fef3f2;color:#b42318;padding:10px;border-radius:9px;margin:8px 0}.errors:empty{display:none}.status-pill{display:inline-block;padding:4px 10px;border-radius:99px;background:#e0f2fe;color:#075985;font-weight:900}
+.preview-frame{border:1px dashed #98a2b3;border-radius:14px;padding:14px;margin-top:10px;background:#fff}.preview-frame.mobile{max-width:390px;margin-left:auto;margin-right:auto}
+.asset-row{display:grid;grid-template-columns:90px 1fr;gap:12px;border:1px solid #d9e1ec;border-radius:12px;padding:10px;margin:8px 0}.asset-row img{max-width:90px;max-height:70px}
+@media(max-width:800px){.studio-grid{grid-template-columns:1fr}}
+</style></head><body>
+<header class="top"></header>
+<main class="wrap">
+<h1>Question Studio</h1>
+<p class="muted">Edit questions as drafts. Published content shown to students is never overwritten directly; every publish creates a new version.</p>
+
+<div class="card">
+  <div class="studio-grid">
+    <label class="field"><span>Question</span><select id="qPicker"></select></label>
+    <div><span class="status-pill" id="statusPill">published</span> <span class="muted" id="gateText"></span>
+      <div class="actions">
+        <button class="btn" id="saveDraft" type="button">Save draft</button>
+        <button class="btn" id="advanceGate" type="button">Pass next review gate</button>
+        <button class="btn primary" id="publishBtn" type="button">Publish</button>
+        <button class="btn" id="archiveBtn" type="button">Archive</button>
+      </div>
+    </div>
+  </div>
+  <div class="actions"><button class="btn" id="dupQuestion" type="button">Duplicate question</button><button class="btn" id="dupGroup" type="button">Duplicate group template</button></div>
+  <div class="errors" id="errors" role="alert"></div><div class="muted" id="saveMsg" role="status"></div>
+</div>
+
+<div class="card"><h2>Shared statement</h2><div id="rteShared"></div></div>
+<div class="card"><h2>Question</h2><div id="rteQuestion"></div></div>
+
+<div class="card"><h2>Response component</h2>
+  <div class="studio-grid">
+    <label class="field"><span>Component type</span><select id="compType"></select></label>
+    <label class="field"><span>Component settings (JSON)</span><textarea id="compJson" rows="6" spellcheck="false"></textarea></label>
+  </div>
+  <div id="compPreview" class="preview-frame"></div>
+</div>
+
+<div class="card"><h2>Assessment fields</h2><div id="assessFields"></div></div>
+
+<div class="card"><h2>Assets</h2>
+  <div class="studio-grid">
+    <div>
+      <label class="field"><span>Upload image to this question</span><input type="file" id="assetFile" accept="image/*"></label>
+      <label class="field"><span>Or choose an existing asset</span><select id="assetExisting"><option value="">Select…</option></select></label>
+      <button class="btn" id="attachExisting" type="button">Attach existing asset</button>
+    </div>
+    <div>
+      <label class="field"><span>Alt text (required for students)</span><input id="aAlt"></label>
+      <label class="field"><span>Caption</span><input id="aCaption"></label>
+      <label class="field"><span>Source</span><input id="aSource"></label>
+      <label class="field"><span>Rights holder</span><input id="aRights"></label>
+      <label class="field"><span>Licence</span><input id="aLicence"></label>
+      <div class="studio-grid">
+        <label class="field"><span>Approval</span><select id="aApproval"><option>draft</option><option>approved</option><option>published</option></select></label>
+        <label class="field"><span>Placement</span><select id="aPlacement"><option value="above">Above question</option><option value="below">Below question</option><option value="with_options">With options</option></select></label>
+      </div>
+    </div>
+  </div>
+  <div id="assetList"></div>
+</div>
+
+<div class="card"><h2>Student preview</h2>
+  <div class="actions"><button class="btn" data-pv="desktop" type="button">Desktop</button><button class="btn" data-pv="mobile" type="button">Mobile</button><button class="btn" data-pv="strict" type="button">Strict exam</button><button class="btn" data-pv="supported" type="button">Supported practice</button></div>
+  <div id="previewFrame" class="preview-frame"></div>
+</div>
+
+<div class="card"><h2>Version history</h2><div id="versions" class="muted">No published versions yet.</div></div>
+
+<script src="data.js"></script><script src="studio-store.js"></script><script src="studio.js"></script>
+</main>
+<footer class="foot">Independent educational prototype. Not affiliated with or endorsed by VCAA. Marks are indicative.<p><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="cookies.html">Cookies</a><a href="refunds.html">Refunds</a><a href="contact.html">Contact</a></p></footer><script src="site-shell.js"></script></body></html>
