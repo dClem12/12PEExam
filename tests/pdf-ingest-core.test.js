@@ -157,5 +157,16 @@ test('excluded pages are skipped by detection', () => {
   assert.strictEqual(x.candidates.filter(c => c.section === 'B').length, 0);
 });
 
+test('screenshot case: noisy headings and footers do not merge questions', () => {
+  const t = 'SECTION A\nQuestion 1\nWhich is a stimulant?\nA. caffeine.\nB. alcohol.\nC. water.\nD. sodium.\n' +
+    'Question 2 g An insufficient psychological state of alertness and\nanticipation is a result of 3\nA. increased motivation. )\nB. decreased arousal.\nC. increased anxiety.\nD. decreased confidence. g [\n' +
+    'Question 3 3 During low-intensity exercise, the main fuel is\nA. glycogen.\nB. creatine.\nC. fat.\nD. phosphocreatine.\n2024 VCE Physical Education Section A Page 3 of 36';
+  const q = Core.detectQuestions([{ page: 1, text: t }]).candidates;
+  assert.deepStrictEqual(q.map(c => c.number), ['1', '2', '3']);
+  const all = JSON.stringify(q);
+  assert(!/VCE Physical Education|Page 3 of 36/.test(all), 'footer leaked');
+  assert(!/Question 3/.test(JSON.stringify(q[1])), 'Q2 swallowed Q3');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
