@@ -1,0 +1,19 @@
+{
+  "verified_controls": [
+    "id=\"importPdf\"",
+    "Choose examination PDF",
+    "id=\"pdfInput\"",
+    "id=\"pdfDialog\"",
+    "src=\"pdf-ingest.js\""
+  ],
+  "files": [
+    "studio.html",
+    "studio.js",
+    "studio-store.js",
+    "pdf-ingest-core.js",
+    "pdf-ingest.js",
+    "practice.js",
+    "preview.html",
+    "app.css"
+  ]
+}
