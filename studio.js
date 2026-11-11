@@ -44,7 +44,7 @@
     if (c.section === 'A') {
       const p = st.optionPercentages || { A: 0, B: 0, C: 0, D: 0 };
       box.innerHTML = `<div class="studio-grid"><div>
-        <label class="field"><span>Correct option</span><select id="fCorrect">${['A', 'B', 'C', 'D'].map(o => `<option ${st.correctOption === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>
+        <label class="field"><span>Correct option</span><select id="fCorrect">${(st.correctOption || c.correctOption) ? '' : '<option value="">Select…</option>'}${['A', 'B', 'C', 'D'].map(o => `<option ${(st.correctOption || c.correctOption) === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>
         ${['A', 'B', 'C', 'D'].map(o => `<label class="field"><span>Percentage selecting ${o}</span><input type="number" min="0" max="100" id="fPct${o}" value="${p[o] ?? 0}"></label>`).join('')}
         <label class="field"><span>Calculated percentage correct (read-only)</span><input id="fCalc" readonly></label></div><div>${common}</div></div>`;
       ['A', 'B', 'C', 'D'].concat('Correct').forEach(o => $('f' + (o === 'Correct' ? 'Correct' : 'Pct' + o)).oninput = syncCalc);
@@ -68,7 +68,7 @@
   }
   function syncCalc() {
     const c = current();
-    if (c.section === 'A') { const k = $('fCorrect').value; $('fCalc').value = ($('fPct' + k).value || 0) + '%'; }
+    if (c.section === 'A') { const k = $('fCorrect').value, el = $('fPct' + k); $('fCalc').value = el ? (el.value || 0) + '%' : ''; }
     else { const a = parseFloat($('fAvg').value), m = parseFloat($('fMax').value); $('fCalc').value = m > 0 && !isNaN(a) ? S.recalcPercentage({ statisticType: 'average_score', averageScore: a, maximumScore: m }) + '%' : ''; }
   }
   function collectStats(c) {
@@ -76,14 +76,20 @@
     if (c.section === 'A') {
       const p = {}; ['A', 'B', 'C', 'D'].forEach(o => p[o] = parseFloat($('fPct' + o).value) || 0);
       const k = $('fCorrect').value;
+      if (!Object.values(p).some(v => v > 0) && !src.trim()) return { statisticType: 'not_published' };
       return { statisticType: 'option_distribution', correctOption: k, correctPercentage: p[k], optionPercentages: p, cohort: '2025 examination cohort', source: src, sourceVerified: ver };
     }
     const avg = parseFloat($('fAvg').value), max = parseFloat($('fMax').value);
+    if (isNaN(avg) && !src.trim()) return { statisticType: 'not_published' };
     return { statisticType: 'average_score', averageScore: avg, maximumScore: max, calculatedPercentage: S.recalcPercentage({ statisticType: 'average_score', averageScore: avg, maximumScore: max }), cohort: '2025 examination cohort', source: src, sourceVerified: ver };
   }
   function collect() {
     const c = current(), patch = { textHtml: qEd.get(), sharedContextHtml: sharedEd.get(), assessmentStatistics: collectStats(c) };
     try { const cfg = JSON.parse($('compJson').value || '{}'); cfg.type = $('compType').value; patch.responseComponent = cfg; } catch { patch.responseComponent = null; }
+    if (c.section === 'A') {
+      const k = $('fCorrect').value; patch.correctOption = k;
+      if (patch.responseComponent && patch.responseComponent.type === 'multiple_choice') patch.responseComponent.correct = k;
+    }
     if (c.section === 'B') {
       const crit = $('fCrit').value.split('\n').map(x => x.trim()).filter(Boolean);
       patch.criteria = crit.map((t, i) => [t, [], 'criterion-' + (i + 1)]);
@@ -96,14 +102,15 @@
   }
   function liveValidate() {
     const c = current(), p = collect(), merged = Object.assign({}, c, p);
-    const errs = [...S.validateAssessment(merged, merged.assessmentStatistics), ...S.validateFullMark(merged)];
+    const errs = [...S.validateAssessment(merged, merged.assessmentStatistics), ...S.validateFullMark(merged), ...S.validateMcKey(merged)];
     $('errors').innerHTML = errs.map(e => `<div>${esc(e)}</div>`).join('');
     return errs;
   }
 
   /* ---------- response component ---------- */
   function renderComponentEditor(c) {
-    const comp = c.responseComponent || { type: c.responseType === 'multiple_choice' ? 'multiple_choice' : 'extended_text', options: c.options || [] };
+    const key = c.correctOption || (c.assessmentStatistics && c.assessmentStatistics.correctOption);
+    const comp = c.responseComponent || { type: c.responseType === 'multiple_choice' ? 'multiple_choice' : 'extended_text', options: c.options || [], ...(key ? { correct: key } : {}) };
     $('compType').innerHTML = S.COMPONENTS.map(t => `<option ${comp.type === t ? 'selected' : ''}>${t}</option>`).join('');
     const { type, ...rest } = comp; $('compJson').value = JSON.stringify(rest, null, 1);
     drawComponent();
@@ -120,7 +127,7 @@
     const c = Object.assign({}, current(), collect()), f = $('previewFrame');
     f.className = 'preview-frame' + (pvMode === 'mobile' ? ' mobile' : '');
     const st = c.assessmentStatistics, strict = pvMode === 'strict';
-    const stat = !st ? 'No cohort statistic published' : st.statisticType === 'option_distribution' ? `${st.correctPercentage}% answered correctly` : `Average: ${st.averageScore}/${st.maximumScore}`;
+    const stat = !st ? 'No cohort statistic published' : st.statisticType === 'option_distribution' ? `${st.correctPercentage}% answered correctly` : st.statisticType === 'average_score' ? `Average: ${st.averageScore}/${st.maximumScore}` : 'No cohort statistic published';
     const comp = c.responseComponent || { type: c.responseType === 'multiple_choice' ? 'multiple_choice' : 'extended_text', options: c.options || [] };
     f.innerHTML = `${c.sharedContextHtml ? `<div class="context">${c.sharedContextHtml}</div>` : ''}
       <div class="tagrow"><span class="tag dark">${c.examYear} VCAA Exam</span><span class="tag purple">Section ${c.section}, Question ${esc(c.displayLabel)}</span><span class="tag">${esc(c.topic)}</span><span class="tag amber">${c.marks} mark${c.marks === 1 ? '' : 's'}</span>${strict ? '' : `<span class="tag green stat">${esc(stat)}</span>`}</div>

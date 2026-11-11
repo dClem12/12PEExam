@@ -31,3 +31,23 @@ The 12 SVG assets had been uploaded to the repository root, so every question im
 - Studio publishing is a single-browser static prototype (localStorage + IndexedDB); it has no accounts,
   roles or server-side enforcement.
 - The timed exam honours published rich text and response components, but not yet per-component autosave edge cases beyond the tested table/text flows.
+
+## PDF import fixes (follows the Copilot-added import screen)
+- **Error fixed:** the import wrote to `#globalStatus`, which did not exist in `studio.html`, so creating drafts ended with
+  "Cannot set properties of null (setting 'textContent')". The element now exists and the importer no longer fails if it is missing.
+- **Detection rewritten** (`pdf-ingest-core.js`): reading starts at the first "Question N" heading, so cover pages, instructions
+  and lines such as "2 hours" or "20 questions 20 marks" are never treated as questions. Section A is split into wording and four
+  options; Section B into a shared statement and lettered parts with their own marks. Cover/instruction pages are unticked by default.
+- **Re-importing** replaces earlier unedited PDF drafts (it no longer stops on "already exists"). Edited or published questions are kept.
+  New button: **Discard unedited PDF drafts**.
+- **Bundled pdf.js** in `vendor/pdfjs/` is used when the CDN copy does not load.
+
+## Publishing rules changed
+- A Section A question cannot be published until a correct option is chosen and it has four non-empty options.
+  The Studio "Correct option" box now starts blank instead of defaulting to A, and drives the practice-page answer check.
+- A question with no cohort statistic yet saves as "not published" (shown as "No cohort statistic published") instead of
+  saving zero percentages or a blank average, so it can be published before the examiner report arrives.
+
+## Not yet covered by PDF import
+Tables and graphs are not extracted (they need an image clip); curriculum topic is set to "Unclassified"; hints and
+cohort statistics come from the examiner report, which is a separate step. Scanned PDFs need the OCR step and manual correction.

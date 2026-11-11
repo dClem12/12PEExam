@@ -10,6 +10,7 @@
     "studio.html",
     "studio.js",
     "studio-store.js",
+    "pdf-ingest-core.js",
     "pdf-ingest.js",
     "practice.js",
     "preview.html",

@@ -3,10 +3,12 @@
    Requires Playwright and a Chromium/Chrome install. Not part of the public website. */
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
 const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '..');
-const url = f => 'file://' + path.join(root, f);
+let base = '';
+const url = f => base + f;
 let failures = 0, passes = 0;
 const check = (name, ok, detail) => {
   if (ok) { passes++; console.log('  ok   ' + name); }
@@ -20,6 +22,14 @@ function loadData() {
 
 (async () => {
   const Q = loadData();
+  const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.json': 'application/json' };
+  const server = http.createServer((req, res) => {
+    const f = path.join(root, decodeURIComponent(req.url.split('?')[0]));
+    if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
+  });
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  base = 'http://127.0.0.1:' + server.address().port + '/';
 
   console.log('Data integrity');
   check('51 questions (20 A, 31 B)', Q.length === 51 && Q.filter(q => q.section === 'A').length === 20 && Q.filter(q => q.section === 'B').length === 31);
@@ -40,6 +50,7 @@ function loadData() {
     for (const m of html.matchAll(/(?:href|src)="([^"#:][^"]*)"/g)) {
       const target = m[1].split('?')[0];
       if (/^[a-z][a-z0-9+.-]*:/i.test(target)) continue; // external URLs are not local links
+      if (/^[a-z][a-z0-9+.-]*:/i.test(target)) continue; // external URLs are not local links
       if (target && !fs.existsSync(path.join(root, target))) missing.push(f + ' -> ' + target);
     }
   }
@@ -50,6 +61,7 @@ function loadData() {
 
   const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome', args: ['--no-sandbox'] });
   const ctx = await browser.newContext();
+  await ctx.route(/cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net/, r => r.abort()); // tests use the bundled pdf.js, not the CDN
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -216,8 +228,99 @@ function loadData() {
   check('archived question is hidden from students', !(await page.$$eval('#selector option', o => o.some(x => /Question 1a /.test(x.textContent)))));
   check('draft duplicates are not shown to students', !(await page.$$eval('#selector option', o => o.some(x => /copy/i.test(x.textContent)))));
 
+
+  console.log('PDF import: cover pages, error and re-import');
+  const COVER_E = ['Victorian Certificate of Education 2025', 'PHYSICAL EDUCATION', 'Written examination', 'Reading time: 15 minutes', 'Writing time: 2 hours', 'QUESTION AND ANSWER BOOK', 'Structure of book', 'A 20 20 20', 'B 4 4 80', '2 hours', '20 questions 20 marks', '80 marks total', 'Instructions', 'Write your student number in the space provided above.', '2025 PHYSEDU EXAM'];
+  const PAGE2 = ['SECTION A – Multiple-choice questions', 'Instructions for Section A', 'Answer all questions in pencil.', 'Question 1', 'Which energy system is the main contributor during a 100 m sprint?', 'A. aerobic system', 'B. ATP-CP system', 'C. lactic acid system', 'D. glycolysis and the aerobic system', 'Question 2', 'The term stroke volume refers to the', 'A. number of beats per minute.', 'B. volume of blood ejected per beat.', 'C. volume of air breathed per minute.', 'D. oxygen used per kilogram.', 'TURN OVER'];
+  const PAGE3 = ['SECTION B – Short-answer questions', 'Instructions for Section B', 'Answer all questions in the spaces provided.', 'Question 1 (5 marks)', 'Fifteen lacrosse players were monitored during an 80-minute match.', 'a. Describe one adaptation of the cardiovascular system to training. 2 marks', 'b. Explain how the lactic acid system contributes to a repeated sprint. 3 marks', 'Question 2 (4 marks)', 'Explain why warm-ups reduce injury risk. 4 marks', 'END OF QUESTION AND ANSWER BOOK'];
+  const pdfExam = path.join(require('os').tmpdir(), 'VCE-PE-2025-exam.pdf');
+  { const pp = await ctx.newPage();
+    await pp.setContent('<body style="font:14px sans-serif">' + [COVER_E, PAGE2, PAGE3].map(l => '<section style="page-break-after:always">' + l.map(t => '<div>' + t.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>').join('') + '</section>').join('') + '</body>');
+    await pp.pdf({ path: pdfExam, format: 'A4' }); await pp.close(); }
+
+  const openPdf = async () => {
+    await page.goto(url('studio.html'));
+    await page.setInputFiles('#pdfInput', pdfExam);
+    await page.waitForSelector('#pdfDialog[open]', { timeout: 20000 });
+  };
+  const createDrafts = async () => {
+    const nav = page.waitForNavigation({ timeout: 20000 });
+    await page.click('#createPdfDrafts');
+    await page.waitForFunction(() => /Created \d+ unverified/.test(document.getElementById('pdfProgress').textContent) || document.querySelector('#pdfProgress .errors'));
+    const msg = await page.textContent('#pdfProgress'); await nav; return msg;
+  };
+  const stateIds = () => page.evaluate(() => Object.keys(StudioStore.state.custom).filter(k => k.startsWith('VCE-PE-')).sort());
+
+  await page.goto(url('studio.html'));
+  check('status element the importer writes to exists', (await page.locator('#globalStatus').count()) === 1);
+  await openPdf();
+  const incs = await page.$$eval('.pageInc', e => e.map(x => x.checked));
+  check('cover page is excluded by default, question pages included', incs.length === 3 && incs[0] === false && incs[1] && incs[2], JSON.stringify(incs));
+  check('status explains the excluded cover page', /1 cover or instruction page is excluded/.test(await page.textContent('#pdfProgress')));
+  await page.click('#runOcr');
+  check('OCR button without the OCR library shows a message, not an error', /OCR library could not load/.test(await page.textContent('#pdfProgress')));
+  await page.click('#detectQuestions'); await page.waitForSelector('[data-k=text]');
+  const vals = await page.$$eval('[data-k=text]', e => e.map(x => x.value));
+  check('five questions detected and none come from the cover', vals.length === 5 && !vals.some(v => /hours|Reading time|student number|Structure of book|questions 20 marks/i.test(v)), vals.join(' | '));
+  check('first question is Section A question 1 with parsed options', (await page.inputValue('[data-c="0"][data-k=section]')) === 'A' && (await page.inputValue('[data-c="0"][data-k=opt1]')) === 'ATP-CP system');
+  check('Section B parts carry their own marks', (await page.inputValue('[data-c="2"][data-k=marks]')) === '2' && (await page.inputValue('[data-c="3"][data-k=marks]')) === '3');
+  check('Section B parts share the statement', /Fifteen lacrosse players/.test(await page.inputValue('[data-c="2"][data-k=sharedContext]')));
+  await page.click('#backToPages');
+  check('back button returns to the page text', (await page.locator('.pageText').count()) === 3);
+  await page.goto(url('studio.html'));
+
+  // The reported scenario: the front-cover text is deleted before detecting and creating drafts.
+  await openPdf();
+  await page.locator('details').first().evaluate(d => { d.open = true; });
+  await page.fill('.pageText[data-i="0"]', '');
+  await page.click('#detectQuestions'); await page.waitForSelector('[data-k=text]');
+  const msg1 = await createDrafts();
+  check('creating drafts after deleting the cover text succeeds (no null error)', /Created 5 unverified question drafts/.test(msg1) && !/Cannot set properties/.test(msg1), msg1);
+  const ids1 = await stateIds();
+  check('five drafts exist with stable ids', JSON.stringify(ids1) === JSON.stringify(['VCE-PE-2025-MAIN-A-Q01', 'VCE-PE-2025-MAIN-A-Q02', 'VCE-PE-2025-MAIN-B-Q01A', 'VCE-PE-2025-MAIN-B-Q01B', 'VCE-PE-2025-MAIN-B-Q02']), ids1.join(','));
+  const draftRec = await page.evaluate(() => { const c = StudioStore.state.custom['VCE-PE-2025-MAIN-B-Q01A'], i = StudioStore.state.items['VCE-PE-2025-MAIN-B-Q01A']; return { marks: c.marks, ctx: c.sharedContext, status: i.status, group: c.group, ref: c.ref, prov: c.provenance.wording.verificationStatus, hints: c.hints, criteria: c.criteria }; });
+  check('drafts are unverified, ungated and fully shaped', draftRec.marks === 2 && /Fifteen/.test(draftRec.ctx) && draftRec.status === 'draft' && draftRec.group === '1' && draftRec.ref === '1a' && draftRec.prov === 'unverified' && Array.isArray(draftRec.hints) && Array.isArray(draftRec.criteria));
+  check('students cannot see imported drafts', await page.goto(url('practice.html')).then(() => page.evaluate(() => !QUESTIONS.some(q => q.id.startsWith('VCE-PE-')))));
+
+  const msg2 = await (async () => { await openPdf(); await page.click('#detectQuestions'); await page.waitForSelector('[data-k=text]'); return createDrafts(); })();
+  check('importing the same PDF again replaces the unedited drafts instead of failing', /Created 0/.test(msg2) && /Replaced 5/.test(msg2), msg2);
+
+  console.log('PDF import: finishing an imported multiple-choice question');
+  await page.goto(url('studio.html')); await page.selectOption('#qPicker', 'VCE-PE-2025-MAIN-A-Q01');
+  check('correct option starts blank instead of defaulting to A', (await page.inputValue('#fCorrect')) === '');
+  await page.click('#saveDraft');
+  for (let i = 0; i < 4; i++) await page.click('#advanceGate');
+  await page.click('#publishBtn');
+  check('cannot publish without choosing the correct option', /Choose the correct option/.test(await page.textContent('#errors')));
+  await page.selectOption('#fCorrect', 'B');
+  await page.click('#saveDraft');
+  for (let i = 0; i < 4; i++) await page.click('#advanceGate');
+  await page.click('#publishBtn');
+  check('publishes once the answer is chosen, with no cohort statistic yet', /Published as version 1/.test(await page.textContent('#saveMsg')));
+  await page.goto(url('practice.html')); await page.selectOption('#topicFilter', 'Unclassified');
+  const tagsI = await page.$$eval('.tagrow .tag', e => e.map(x => x.textContent.trim()));
+  check('imported question shows "No cohort statistic published"', tagsI[4] === 'No cohort statistic published', tagsI.join(' | '));
+  await page.locator('input[name=answer][value=A]').check(); await page.click('#assess');
+  check('wrong answer is marked with the right key', /Not yet correct\. Correct answer: B/.test(await page.textContent('#feedback')), await page.textContent('#feedback'));
+  await page.locator('input[name=answer][value=B]').check(); await page.click('#assess');
+  check('right answer is marked correct', /Correct/.test(await page.textContent('#feedback')) && !/Not yet/.test(await page.textContent('#feedback')));
+
+  console.log('PDF import: protecting edited work, and clean-up');
+  await page.goto(url('studio.html')); await page.selectOption('#qPicker', 'VCE-PE-2025-MAIN-B-Q02');
+  await page.locator('.rte-area').nth(1).evaluate(e => { e.innerHTML = 'My corrected wording'; e.dispatchEvent(new Event('input')); });
+  await page.click('#saveDraft');
+  const msg3 = await (async () => { await openPdf(); await page.click('#detectQuestions'); await page.waitForSelector('[data-k=text]'); return createDrafts(); })();
+  check('edited and published questions are kept, the rest replaced', /Replaced 3/.test(msg3) && /2 kept as they were/.test(msg3), msg3);
+  check('the edit survived the re-import', await page.evaluate(() => /My corrected wording/.test(StudioStore.state.items['VCE-PE-2025-MAIN-B-Q02'].draft.textHtml)));
+  await page.goto(url('studio.html'));
+  page.once('dialog', d => d.accept());
+  const navD = page.waitForNavigation({ timeout: 15000 });
+  await page.click('#discardImports'); await navD;
+  const ids2 = await stateIds();
+  check('discard removes only unedited, unpublished import drafts', JSON.stringify(ids2) === JSON.stringify(['VCE-PE-2025-MAIN-A-Q01', 'VCE-PE-2025-MAIN-B-Q02']), ids2.join(','));
+
   check('no page errors', errors.length === 0, errors.join('; '));
-  await browser.close();
+  await browser.close(); server.close();
   console.log(`\n${passes} passed, ${failures} failed`);
   process.exit(failures ? 1 : 0);
 })();

@@ -135,7 +135,7 @@
     const a = attemptOf(q.id);
     a.count = (a.count || 0) + 1;
 
-    if (usesComponent(q) && q.responseComponent.type !== 'extended_text' && q.responseComponent.type !== 'short_text') {
+    if (usesComponent(q) && !['extended_text', 'short_text', 'multiple_choice'].includes(q.responseComponent.type)) {
       a.submissions.push({ text: raw, at: new Date().toISOString(), criteriaMet: [] }); persist();
       const r = SS.assessComponent(q.responseComponent, decode(raw));
       feedback.innerHTML = `<div class="notice">${r.available ? `${r.earned} of ${r.available} auto-checked item${r.available === 1 ? '' : 's'} correct.` : 'Submitted for review.'}</div><p>${esc(r.note)}</p>`; return;

@@ -120,6 +120,15 @@
     const missing = (question.criteria || []).filter(c => !ex.criteriaDemonstrated.includes(c[2])).map(c => c[0]);
     return missing.length ? ['The full-mark example must demonstrate every configured criterion. Missing: ' + missing.join('; ')] : [];
   }
+  // Section A must have four options and a chosen correct answer before students can see it.
+  function validateMcKey(q) {
+    if (q.section !== 'A') return [];
+    const errs = [], k = q.correctOption || (q.assessmentStatistics && q.assessmentStatistics.correctOption);
+    const opts = (q.responseComponent && q.responseComponent.options) || q.options || [];
+    if (!['A', 'B', 'C', 'D'].includes(k)) errs.push('Choose the correct option before publishing.');
+    if (opts.length < 4 || opts.some(o => !String(o || '').trim())) errs.push('Section A needs four non-empty options (edit them in the response component settings).');
+    return errs;
+  }
   const recalcPercentage = s => s.statisticType === 'average_score' && s.maximumScore ? Math.round(s.averageScore / s.maximumScore * 1000) / 10 : s.calculatedPercentage;
 
   /* ---------- workflow, drafts, versions ---------- */
@@ -157,7 +166,7 @@
     const it = item(id); if (!it.draft) return { ok: false, errors: ['No draft to publish.'] };
     if (it.gates.length < GATES.length) return { ok: false, errors: ['Complete every review gate before publishing: ' + GATES.slice(it.gates.length).join(', ') + '.'] };
     const merged = Object.assign(clone(pick(base(id))), it.draft);
-    const errors = [...validateAssessment(merged, merged.assessmentStatistics), ...validateFullMark(Object.assign({}, base(id), merged))];
+    const errors = [...validateAssessment(merged, merged.assessmentStatistics), ...validateFullMark(Object.assign({}, base(id), merged)), ...validateMcKey(Object.assign({}, base(id), merged))];
     if (errors.length) return { ok: false, errors };
     const n = it.versions.length + 1;
     it.versions.push({ n, at: new Date().toISOString(), by: by || 'author', snapshot: clone(it.draft) }); // previous published content stays in history; never overwritten
@@ -224,7 +233,7 @@
   }
   const archivedIds = () => Object.keys(state.items).filter(id => state.items[id].status === 'archived');
 
-  window.StudioStore = { STATES, GATES, COMPONENTS, state, save, sanitise, renderComponent, readComponent, assessComponent, validateAssessment, validateFullMark, recalcPercentage, item, startDraft, updateDraft, advance, publish, rollback, archive, duplicate, assets, mountAssets, applyPublished, archivedIds, base };
+  window.StudioStore = { STATES, GATES, COMPONENTS, state, save, sanitise, renderComponent, readComponent, assessComponent, validateAssessment, validateFullMark, validateMcKey, recalcPercentage, item, startDraft, updateDraft, advance, publish, rollback, archive, duplicate, assets, mountAssets, applyPublished, archivedIds, base };
   applyPublished();
   if (!/studio\.html$/.test(location.pathname)) hideArchived();
 })();
